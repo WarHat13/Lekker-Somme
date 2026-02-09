@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lekker Somme</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: url("Agtergrond.png") no-repeat center center fixed;
+    background-size: cover;
+    text-align: center;
+}
+
+.hidden { display: none; }
+
+/* ---------- TITEL ---------- */
+#title span {
+    font-size: 42px;
+    font-weight: bold;
+}
+
+/* ---------- OPENING ---------- */
+.container {
+    padding: 20px;
+}
+
+input[type="number"] {
+    font-size: 20px;
+    width: 80px;
+    text-align: center;
+}
+
+.operations {
+    display: grid;
+    grid-template-columns: repeat(2, 120px);
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.op-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.op-box img {
+    width: 50px;
+    margin-left: 5px;
+}
+
+button {
+    font-size: 22px;
+    padding: 10px 30px;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+/* ---------- SPEL ---------- */
+#topBar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#stamps img {
+    width: 40px;
+    margin-left: 5px;
+}
+
+#question {
+    font-size: 40px;
+    font-weight: bold;
+    margin: 30px 0;
+}
+
+#answer {
+    font-size: 30px;
+    width: 120px;
+    text-align: center;
+}
+
+/* ---------- NUMMERPAD ---------- */
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.keypad button {
+    font-size: 26px;
+    padding: 15px;
+}
+
+/* ---------- POPUP ---------- */
+#popup {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#popup div {
+    background: white;
+    padding: 20px;
+    font-size: 22px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= OPENING ================= -->
+<div id="startScreen" class="container">
+
+    <div id="title">
+        <span style="color:red">L</span>
+        <span style="color:orange">e</span>
+        <span style="color:yellow">k</span>
+        <span style="color:green">k</span>
+        <span style="color:blue">e</span>
+        <span style="color:purple">r</span>
+        <span style="color:pink"> </span>
+        <span style="color:cyan">S</span>
+        <span style="color:lime">o</span>
+        <span style="color:magenta">m</span>
+        <span style="color:teal">m</span>
+        <span style="color:gold">e</span>
+    </div>
+
+    <img src="Logo.png" style="width:150px; margin:20px 0;">
+
+    <p><strong>Tyd (1–30s)</strong></p>
+    <input id="timeInput" type="number" min="1" max="30">
+
+    <div class="operations">
+        <label class="op-box"><input type="checkbox" value="+"><img src="Plus.png"></label>
+        <label class="op-box"><input type="checkbox" value="-"><img src="Minus.png"></label>
+        <label class="op-box"><input type="checkbox" value="*"><img src="Maal.png"></label>
+        <label class="op-box"><input type="checkbox" value="/"><img src="Deel.png"></label>
+    </div>
+
+    <p><strong>Hoogste getal (1–100)</strong></p>
+    <input id="maxInput" type="number" min="1" max="100">
+
+    <br>
+    <button onclick="startGame()">Speel</button>
+</div>
+
+<!-- ================= GAME ================= -->
+<div id="gameScreen" class="hidden">
+
+    <div id="topBar">
+        <div id="timer">Tyd: 0</div>
+        <div id="stamps"></div>
+    </div>
+
+    <div id="question"></div>
+
+    <input id="answer" disabled>
+
+    <div class="keypad">
+        <button onclick="pressKey(1)">1</button>
+        <button onclick="pressKey(2)">2</button>
+        <button onclick="pressKey(3)">3</button>
+        <button onclick="pressKey(4)">4</button>
+        <button onclick="pressKey(5)">5</button>
+        <button onclick="pressKey(6)">6</button>
+        <button onclick="pressKey(7)">7</button>
+        <button onclick="pressKey(8)">8</button>
+        <button onclick="pressKey(9)">9</button>
+        <button onclick="pressKey(0)">0</button>
+        <button onclick="submitAnswer()">Enter</button>
+    </div>
+</div>
+
+<!-- ================= VIDEO ================= -->
+<video id="rewardVideo" class="hidden" src="Video.mp4"></video>
+
+<!-- ================= POPUP ================= -->
+<div id="popup" class="hidden">
+    <div>Voltooi eers al die opsies</div>
+</div>
+
+<script>
+let timeLeft, timerInterval;
+let correctAnswer = 0;
+let stamps = 0;
+let operations = [];
+let maxNumber = 10;
+
+/* ---------- START ---------- */
+function startGame() {
+    const time = parseInt(timeInput.value);
+    maxNumber = parseInt(maxInput.value);
+
+    operations = [...document.querySelectorAll("input[type=checkbox]:checked")].map(c => c.value);
+
+    if (!time || time < 1 || time > 30 || operations.length === 0 || !maxNumber) {
+        popup.classList.remove("hidden");
+        setTimeout(() => popup.classList.add("hidden"), 1500);
+        return;
+    }
+
+    stamps = 0;
+    stampsDiv();
+    timeLeft = time;
+
+    startScreen.classList.add("hidden");
+    gameScreen.classList.remove("hidden");
+
+    timer.textContent = "Tyd: " + timeLeft;
+    timerInterval = setInterval(countDown, 1000);
+
+    newQuestion();
+}
+
+/* ---------- TIMER ---------- */
+function countDown() {
+    timeLeft--;
+    timer.textContent = "Tyd: " + timeLeft;
+
+    if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        newQuestion();
+    }
+}
+
+/* ---------- QUESTION ---------- */
+function newQuestion() {
+    answer.value = "";
+
+    const op = operations[Math.floor(Math.random() * operations.length)];
+    let a = Math.floor(Math.random() * maxNumber) + 1;
+    let b = Math.floor(Math.random() * maxNumber) + 1;
+
+    if (op === "/") {
+        a = a * b;
+        correctAnswer = a / b;
+    } else if (op === "*") {
+        correctAnswer = a * b;
+    } else if (op === "+") {
+        correctAnswer = a + b;
+    } else {
+        correctAnswer = a - b;
+    }
+
+    question.textContent = `${a} ${op === "*" ? "×" : op === "/" ? "÷" : op} ${b} =`;
+}
+
+/* ---------- KEYPAD ---------- */
+function pressKey(num) {
+    answer.value += num;
+}
+
+function submitAnswer() {
+    if (parseInt(answer.value) === correctAnswer) {
+        stamps++;
+        stampsDiv();
+        if (stamps === 5) {
+            endGame();
+            return;
+        }
+    }
+    newQuestion();
+}
+
+/* ---------- STAMPS ---------- */
+function stampsDiv() {
+    stampsDiv = document.getElementById("stamps");
+    stampsDiv.innerHTML = "";
+    for (let i = 0; i < stamps; i++) {
+        const img = document.createElement("img");
+        img.src = "Stempel.png";
+        stampsDiv.appendChild(img);
+    }
+}
+
+/* ---------- END ---------- */
+function endGame() {
+    clearInterval(timerInterval);
+    gameScreen.classList.add("hidden");
+    rewardVideo.classList.remove("hidden");
+    rewardVideo.play();
+
+    rewardVideo.onended = () => {
+        rewardVideo.classList.add("hidden");
+        startScreen.classList.remove("hidden");
+    };
+}
+</script>
+
+</body>
+</html>
